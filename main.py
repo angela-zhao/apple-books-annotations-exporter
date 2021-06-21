@@ -1,4 +1,4 @@
-'''Script to export highlights from Apple Books'''
+'''Script to export highlights and notes from Apple Books'''
 
 import os
 import argparse
