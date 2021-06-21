@@ -2,6 +2,7 @@
 
 import os
 import argparse
+import getpass
 from glob import glob
 import pandas as pd
 import sqlite3
@@ -9,8 +10,6 @@ from sqlite3 import Error
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--username", type=str,
-                        help="Mac computer username")
     parser.add_argument("--outpath", type=str,
     					default="apple_books_highlights.csv",
     					help="Path to output csv of Apple Books annotations")
@@ -42,8 +41,8 @@ if __name__ == "__main__":
     args = parse_arguments()
 
     # Default directories where Apple Books data are stored
-    books_db_dir = f"/Users/{args.username}/Library/Containers/com.apple.iBooksX/Data/Documents/BKLibrary"
-    notes_db_dir = f"/Users/{args.username}/Library/Containers/com.apple.iBooksX/Data/Documents/AEAnnotation"
+    books_db_dir = f"/Users/{getpass.getuser()}/Library/Containers/com.apple.iBooksX/Data/Documents/BKLibrary"
+    notes_db_dir = f"/Users/{getpass.getuser()}/Library/Containers/com.apple.iBooksX/Data/Documents/AEAnnotation"
     
     # Paths of sqlite files
     try:
