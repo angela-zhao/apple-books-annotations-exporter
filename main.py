@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+'''Script to export highlights from Apple Books'''
 
 import os
 import argparse
@@ -9,14 +9,10 @@ from sqlite3 import Error
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--books_db_dir", type=str,
-                        default="/Users/angelazhao/Library/Containers/com.apple.iBooksX/Data/Documents/BKLibrary",
-                        help="Directory containing database of books in Apple books")
-    parser.add_argument("--notes_db_dir", type=str,
-                        default="/Users/angelazhao/Library/Containers/com.apple.iBooksX/Data/Documents/AEAnnotation",
-                        help="Directory containing database of notes in Apple books")
+    parser.add_argument("--username", type=str,
+                        help="Mac computer username")
     parser.add_argument("--outpath", type=str,
-    					default="apple_books_notes.csv",
+    					default="apple_books_highlights.csv",
     					help="Path to output csv of Apple Books annotations")
     args = parser.parse_args()
     return args
@@ -44,20 +40,27 @@ def create_connection(db_file):
 
 if __name__ == "__main__":
     args = parse_arguments()
+
+    # Default directories where Apple Books data are stored
+    books_db_dir = f"/Users/{args.username}/Library/Containers/com.apple.iBooksX/Data/Documents/BKLibrary"
+    notes_db_dir = f"/Users/{args.username}/Library/Containers/com.apple.iBooksX/Data/Documents/AEAnnotation"
     
+    # Paths of sqlite files
     try:
-        books_db_path = glob(os.path.join(args.books_db_dir, "*.sqlite"))[0]
+        books_db_path = glob(os.path.join(books_db_dir, "*.sqlite"))[0]
     except IndexError:
         print("No books found in Apple books library.")
         
     try:
-        notes_db_path = glob(os.path.join(args.notes_db_dir, "*.sqlite"))[0]
+        notes_db_path = glob(os.path.join(notes_db_dir, "*.sqlite"))[0]
     except IndexError:
         print("No notes found in Apple books library.")
-        
+    
+    # Load books metadata
     books_conn = create_connection(books_db_path) 
     table = pd.read_sql_query("SELECT ZASSETID as AssetID, ZTITLE AS Title, ZAUTHOR AS Author, ZCOVERURL as CoverURL, ZGENRE as Genre FROM ZBKLIBRARYASSET WHERE ZTITLE IS NOT NULL", books_conn)
     
+    # Load annotations data
     notes_conn = create_connection(notes_db_path) 
     table2 = pd.read_sql_query('''
                                SELECT
@@ -75,9 +78,11 @@ if __name__ == "__main__":
 			ORDER BY ZANNOTATIONASSETID ASC,Created ASC
                                ''', notes_conn)
     
+    # Map annotations to the books they was made in
     df = pd.merge(table, table2, how="inner", left_on="AssetID", right_on="ZANNOTATIONASSETID")
     df.drop(["ZANNOTATIONASSETID"], axis=1, inplace=True)
 
+    # Write table to csv
     if args.outpath:
     	print("Writing annotations to csv...")
     	df.to_csv(args.outpath, index=False, encoding='utf-8')
